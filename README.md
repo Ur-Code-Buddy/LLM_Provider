@@ -32,7 +32,7 @@ Required for a working stack:
 
 Optional / tuning (defaults exist in `docker-compose.yml`):
 
-- `LITELLM_HOST_PORT` — host port for LiteLLM (default **4000**).
+- `LITELLM_HOST_PORT` — host port for LiteLLM (default **4001**; proxied behind UI).
 - `GATEWAY_BASIC_MODEL`, `GATEWAY_PREMIUM_MODEL`, `GATEWAY_FALLBACK_MODEL`, `GATEWAY_KIMI_*` — model IDs and Kimi base URL.
 - `GATEWAY_REDIS_URL` — classifier cache (default `redis://redis:6379/0` inside Compose).
 - `LITELLM_SALT_KEY` — optional LiteLLM salt for key hashing.
@@ -67,7 +67,7 @@ This starts:
 
 - **PostgreSQL** — persistent volume `litellm_pgdata`
 - **Redis** — persistent volume `litellm_redisdata`
-- **LiteLLM** — OpenAI-compatible API on **`http://127.0.0.1:4000`** (or `LITELLM_HOST_PORT`)
+- **LiteLLM** — OpenAI-compatible API on **`http://127.0.0.1:4001`** (or `LITELLM_HOST_PORT`)
 
 Check logs:
 
@@ -75,7 +75,7 @@ Check logs:
 docker compose logs -f litellm
 ```
 
-Health: open **`http://127.0.0.1:4000`** in a browser or call your proxy health route if enabled by your LiteLLM version.
+Health: open **`http://127.0.0.1:4001`** in a browser or call your proxy health route if enabled by your LiteLLM version.
 
 **Windows:** Prefer **Docker Desktop**. The **`cloudflared`** service uses **host networking** (Linux-oriented); on Windows, skip the tunnel profile or run Cloudflare Tunnel separately (see below).
 
@@ -135,16 +135,15 @@ npm install
 npm run dev
 ```
 
-Open **`http://127.0.0.1:5173`**. Leave **API base URL** empty in dev so `/v1` and admin routes proxy to **`http://127.0.0.1:4000`** (override with `web/.env` → `VITE_DEV_PROXY_TARGET` if needed).
+Open **`http://127.0.0.1:5173`**. Leave **API base URL** empty in dev so `/v1` and admin routes proxy to **`http://127.0.0.1:4001`** (override with `web/.env` → `VITE_DEV_PROXY_TARGET` if needed).
 
-**Production static build + Docker Nginx:**
+**Production UI + API with Docker Compose:**
 
 ```bash
-cd web && npm install && npm run build && cd ..
-docker compose --profile ui up -d gateway-ui
+docker compose up -d --build
 ```
 
-UI is served on **`http://localhost:8080`** by default (`GATEWAY_UI_PORT`). Set **API base URL** in the sidebar to your public API origin if the browser cannot use the dev proxy — you may need **CORS** on the API or a **single reverse proxy** for the UI and API together.
+UI is served on **`http://localhost:4000`** by default (`GATEWAY_UI_PORT`) and proxies API routes to LiteLLM internally, so same-origin calls work without additional CORS setup.
 
 ---
 
@@ -153,13 +152,12 @@ UI is served on **`http://localhost:8080`** by default (`GATEWAY_UI_PORT`). Set 
 | Profile | Command | Purpose |
 |---------|---------|---------|
 | **tunnel** | `docker compose --profile tunnel up -d cloudflared` | Cloudflare Tunnel (`CF_TUNNEL_TOKEN` → `TUNNEL_TOKEN`). Best on **Linux/Pi** with host networking. |
-| **ui** | `docker compose --profile ui up -d gateway-ui` | Nginx serving **`web/dist`** (Inference Console) — build the UI first. |
 
-Example full stack with tunnel + UI (Linux):
+Example full stack with tunnel (Linux):
 
 ```bash
-cd web && npm install && npm run build && cd ..
-docker compose --profile tunnel --profile ui up -d
+docker compose up -d --build
+docker compose --profile tunnel up -d cloudflared
 ```
 
 ---

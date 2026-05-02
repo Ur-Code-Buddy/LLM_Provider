@@ -1,7 +1,7 @@
 # LiteLLM gateway: Postgres (keys/spend), Redis (router limits + classifier cache), Cloudflare Tunnel (Linux/Pi: host network).
 # Local dev without tunnel: `docker compose up -d postgres redis litellm`
 # With tunnel: set CF_TUNNEL_TOKEN in .env, then `docker compose --profile tunnel up -d`
-# Static UI (after `cd web && npm install && npm run build`): `docker compose --profile ui up -d gateway-ui`
+# Static UI (built by Docker): included in default `docker compose up --build`
 
 services:
   postgres:
@@ -40,7 +40,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "${LITELLM_HOST_PORT:-4000}:4000"
+      - "${LITELLM_HOST_PORT:-4001}:4000"
     volumes:
       - ./config/proxy_config.yaml:/app/config.yaml:ro
       - ./hooks:/app/custom_handlers:ro
@@ -79,16 +79,14 @@ services:
     command: tunnel run
 
   gateway-ui:
-    profiles: ["ui"]
-    image: nginx:alpine
+    build:
+      context: ./web
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       - litellm
     ports:
-      - "${GATEWAY_UI_PORT:-8080}:80"
-    volumes:
-      - ./web/dist:/usr/share/nginx/html:ro
-      - ./web/nginx.spa.conf:/etc/nginx/conf.d/default.conf:ro
+      - "${GATEWAY_UI_PORT:-4000}:80"
 
 volumes:
   litellm_pgdata:
