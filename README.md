@@ -125,7 +125,7 @@ The **`model`** field is rewritten by the gateway hooks; you can still send a pl
 
 ## 5. Web UI (optional)
 
-The **`web/`** app (**Inference Console**) provides **Workspace** (completions) and **Administration** (master key). See **[`web/README.md`](web/README.md)** for details.
+The **`web/`** app (**Inference Console**) provides **Workspace** (completions), **Client portal** (`/portal` — SSO / LiteLLM native dashboard entry points), and **Platform admin** (`/admin` — master-key operator tools). See **[`web/README.md`](web/README.md)** for details.
 
 **Local development** (Vite proxies to the API and avoids most CORS issues):
 
@@ -144,6 +144,23 @@ docker compose up -d --build
 ```
 
 UI is served on **`http://localhost:4000`** by default (`GATEWAY_UI_PORT`) and proxies API routes to LiteLLM internally, so same-origin calls work without additional CORS setup.
+
+### SSO and LiteLLM native UI (same origin)
+
+1. Set **`PROXY_BASE_URL`** in `.env` to your **public** URL with scheme and **no trailing slash** (for example `https://llm.example.com` — or `http://localhost:4000` for local Compose).
+2. In your identity provider, register LiteLLM’s **sign-in redirect URI**  
+   **`https://<PROXY_BASE_URL_HOST>/sso/callback`**  
+   (for local Compose: **`http://localhost:4000/sso/callback`**).
+3. Optional **password fallback** when SSO is on: **`https://<host>/fallback/login`** (LiteLLM route).
+4. The gateway **Nginx** container proxies **`/ui`**, **`/sso/*`**, and **`/fallback/*`** to LiteLLM so the dashboard and OAuth redirects match the host users see in the browser.
+5. **Cloudflare Tunnel** (or any edge proxy) should target your **public entry port** (default **`GATEWAY_UI_PORT` = 4000**), not the raw LiteLLM port (`LITELLM_HOST_PORT`, default **4001**), unless you intentionally expose LiteLLM alone.
+
+Provider-specific env vars (Google, Microsoft, generic OIDC) are listed as comments in **[`.env.example`](.env.example)**. See also LiteLLM docs: [SSO for Admin UI](https://docs.litellm.ai/docs/proxy/admin_ui_sso).
+
+### Optional SPA build env
+
+- **`VITE_LITELLM_UI_URL`** — override where “Open native dashboard” links (default: same-origin **`/ui`**).
+- **`VITE_LITELLM_DIRECT_URL`** — direct LiteLLM host URL for “Direct proxy port” links (default **`http://127.0.0.1:4001`**).
 
 ---
 
@@ -190,7 +207,7 @@ Integration tests are skipped unless **`LITELLM_BASE_URL`** and **`LITELLM_TEST_
 | `docker-compose.yml` | Postgres, Redis, LiteLLM, optional cloudflared + static UI |
 | `config/proxy_config.yaml` | LiteLLM models, Redis router, fallbacks, callbacks |
 | `hooks/` | Guardrails, tier routing, classifier cache, JSON logging |
-| `web/` | React UI (chat + admin) |
+| `web/` | Inference Console (workspace, client portal, platform admin) |
 | `scripts/` | Example `/key/generate` helpers |
 
 ---
@@ -201,5 +218,6 @@ Integration tests are skipped unless **`LITELLM_BASE_URL`** and **`LITELLM_TEST_
 - **401 / key invalid:** Use a **virtual** key for chat; reserve **master** for `/key/*` and admin only.
 - **CORS in browser:** Use Vite dev proxy, or configure LiteLLM CORS, or one reverse proxy for UI + API.
 - **Admin UI “master key”:** Stored in **browser localStorage** — use only on trusted machines.
+- **SSO `redirect_uri` mismatch:** Confirm **`PROXY_BASE_URL`** equals the scheme+host users use, and IdP callbacks include **`/sso/callback`** on that exact host.
 
 For product documentation: under construction.

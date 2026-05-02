@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   blockKey,
+  createTeam,
   generateKey,
   globalSpendReport,
   globalSpendReset,
+  inviteUser,
   keyInfo,
   listKeys,
+  listTeams,
+  listUsers,
   type AdminContext,
+  tryListPolicies,
   type KeyRow,
   unblockKey,
   updateKey,
 } from "../lib/adminApi";
+import { liteLlmDirectConsoleUrl, liteLlmFallbackLoginUrl, liteLlmNativeUiUrl } from "../lib/liteLlmUi";
 import {
   loadAdminCredentials,
   loadSettings,
@@ -29,6 +35,15 @@ const DEFAULT_MODELS = [
 function pickStr(v: unknown): string {
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return "";
+}
+
+function pickRowStr(row: KeyRow, keys: string[]): string {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  }
   return "";
 }
 
@@ -62,10 +77,14 @@ function daysAgoISO(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Platform operator console (master key). Client self-service lives at `/portal`. */
 export function AdminPage() {
   const [apiBase, setApiBase] = useState(() => loadSettings().apiBase);
   const [admin, setAdmin] = useState<AdminCredentials>(() => loadAdminCredentials());
-  const [tab, setTab] = useState<"keys" | "spend" | "danger">("keys");
+  const [signedIn, setSignedIn] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"keys" | "teams" | "users" | "guardrails" | "spend" | "danger">("keys");
 
   const [keys, setKeys] = useState<KeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(false);
@@ -103,6 +122,26 @@ export function AdminPage() {
   const [resetAck, setResetAck] = useState(false);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
 
+  const [teams, setTeams] = useState<KeyRow[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [teamsError, setTeamsError] = useState<string | null>(null);
+  const [teamAlias, setTeamAlias] = useState("");
+  const [teamMaxBudget, setTeamMaxBudget] = useState("");
+  const [teamMsg, setTeamMsg] = useState<string | null>(null);
+
+  const [users, setUsers] = useState<KeyRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserRole, setNewUserRole] = useState("internal_user");
+  const [userMsg, setUserMsg] = useState<string | null>(null);
+
+  const [policyRows, setPolicyRows] = useState<KeyRow[] | null>(null);
+  const [policyErr, setPolicyErr] = useState<string | null>(null);
+
+  const [bindTeamId, setBindTeamId] = useState("");
+  const [bindUserId, setBindUserId] = useState("");
+
   const ctx: AdminContext | null = useMemo(() => {
     const mk = admin.masterKey.trim();
     if (!mk) return null;
@@ -135,10 +174,101 @@ export function AdminPage() {
     }
   }, [ctx]);
 
+  const refreshTeams = useCallback(async () => {
+    if (!ctx) {
+      setTeamsError("Enter the administrator master key.");
+      return;
+    }
+    setTeamsError(null);
+    setTeamsLoading(true);
+    try {
+      const rows = await listTeams(ctx);
+      setTeams(rows);
+    } catch (e) {
+      setTeamsError(e instanceof Error ? e.message : String(e));
+      setTeams([]);
+    } finally {
+      setTeamsLoading(false);
+    }
+  }, [ctx]);
+
+  const refreshUsers = useCallback(async () => {
+    if (!ctx) {
+      setUsersError("Enter the administrator master key.");
+      return;
+    }
+    setUsersError(null);
+    setUsersLoading(true);
+    try {
+      const rows = await listUsers(ctx);
+      setUsers(rows);
+    } catch (e) {
+      setUsersError(e instanceof Error ? e.message : String(e));
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [ctx]);
+
   useEffect(() => {
     if (tab !== "keys" || !ctx) return;
+    if (!signedIn) return;
     void refreshKeys();
-  }, [tab, ctx, refreshKeys]);
+  }, [tab, ctx, refreshKeys, signedIn]);
+
+  useEffect(() => {
+    if (tab !== "teams" || !ctx || !signedIn) return;
+    void refreshTeams();
+  }, [tab, ctx, signedIn, refreshTeams]);
+
+  useEffect(() => {
+    if (tab !== "users" || !ctx || !signedIn) return;
+    void refreshUsers();
+  }, [tab, ctx, signedIn, refreshUsers]);
+
+  useEffect(() => {
+    if (tab !== "guardrails" || !ctx || !signedIn) return;
+    void (async () => {
+      try {
+        const rows = await tryListPolicies(ctx);
+        setPolicyRows(rows);
+        setPolicyErr(
+          rows === null ? "Policies API not exposed on this build — use the native LiteLLM dashboard." : null,
+        );
+      } catch (e) {
+        setPolicyRows([]);
+        setPolicyErr(e instanceof Error ? e.message : String(e));
+      }
+    })();
+  }, [tab, ctx, signedIn]);
+
+  const onSignIn = async () => {
+    if (!ctx) {
+      setAuthError("Enter the administrator master key.");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      const rows = await listKeys(ctx);
+      setKeys(rows);
+      setSignedIn(true);
+      setTab("keys");
+    } catch (e) {
+      setSignedIn(false);
+      setAuthError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const onSignOut = () => {
+    setSignedIn(false);
+    setAuthError(null);
+    setKeysError(null);
+    setKeys([]);
+    setAdmin({ masterKey: "" });
+  };
 
   const onGenerate = async () => {
     if (!ctx) return;
@@ -157,6 +287,8 @@ export function AdminPage() {
       rpm_limit: Number(genRpm) || undefined,
       max_parallel_requests: Number(genParallel) || undefined,
     };
+    if (bindTeamId.trim()) body.team_id = bindTeamId.trim();
+    if (bindUserId.trim()) body.user_id = bindUserId.trim();
     try {
       const res = await generateKey(ctx, body);
       setGenResult(JSON.stringify(res, null, 2));
@@ -244,6 +376,47 @@ export function AdminPage() {
     }
   };
 
+  const onCreateTeam = async () => {
+    if (!ctx || !teamAlias.trim()) {
+      setTeamMsg("Enter a team alias.");
+      return;
+    }
+    setTeamMsg(null);
+    try {
+      const payload: Record<string, unknown> = { team_alias: teamAlias.trim() };
+      if (teamMaxBudget.trim()) payload.max_budget = Number(teamMaxBudget);
+      const res = await createTeam(ctx, payload);
+      setTeamMsg(JSON.stringify(res, null, 2));
+      setTeamAlias("");
+      await refreshTeams();
+    } catch (e) {
+      setTeamMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const onInviteUser = async () => {
+    if (!ctx || !newUserEmail.trim()) {
+      setUserMsg("Enter an email address.");
+      return;
+    }
+    setUserMsg(null);
+    try {
+      const res = await inviteUser(ctx, {
+        user_email: newUserEmail.trim(),
+        user_role: newUserRole.trim() || "internal_user",
+      });
+      setUserMsg(JSON.stringify(res, null, 2));
+      setNewUserEmail("");
+      await refreshUsers();
+    } catch (e) {
+      setUserMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const nativeDash = liteLlmNativeUiUrl();
+  const directConsole = liteLlmDirectConsoleUrl();
+  const fallbackLogin = liteLlmFallbackLoginUrl();
+
   return (
     <div className="admin-root">
       <aside className="admin-side">
@@ -275,25 +448,71 @@ export function AdminPage() {
           />
         </label>
 
-        <nav className="admin-tabs vertical" aria-label="Administration sections">
-          <button type="button" className={`tab ${tab === "keys" ? "on" : ""}`} onClick={() => setTab("keys")}>
-            Keys & limits
-          </button>
-          <button type="button" className={`tab ${tab === "spend" ? "on" : ""}`} onClick={() => setTab("spend")}>
-            Spend & tokens
-          </button>
-          <button type="button" className={`tab ${tab === "danger" ? "on" : ""}`} onClick={() => setTab("danger")}>
-            Danger zone
-          </button>
-        </nav>
+        <div className="btn-row">
+          {!signedIn ? (
+            <button type="button" className="btn primary" disabled={authBusy || !ctx} onClick={() => void onSignIn()}>
+              {authBusy ? "Signing in…" : "Sign in"}
+            </button>
+          ) : (
+            <button type="button" className="btn ghost" onClick={onSignOut}>
+              Sign out
+            </button>
+          )}
+          <a className="btn ghost" href={nativeDash} target="_blank" rel="noreferrer">
+            Native dashboard
+          </a>
+          <a className="btn ghost" href={directConsole} target="_blank" rel="noreferrer">
+            Direct proxy port
+          </a>
+          <a className="btn ghost" href={fallbackLogin} target="_blank" rel="noreferrer">
+            Fallback login
+          </a>
+        </div>
+
+        {signedIn ? (
+          <nav className="admin-tabs vertical" aria-label="Administration sections">
+            <button type="button" className={`tab ${tab === "keys" ? "on" : ""}`} onClick={() => setTab("keys")}>
+              Keys & limits
+            </button>
+            <button type="button" className={`tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}>
+              Teams
+            </button>
+            <button type="button" className={`tab ${tab === "users" ? "on" : ""}`} onClick={() => setTab("users")}>
+              Users
+            </button>
+            <button
+              type="button"
+              className={`tab ${tab === "guardrails" ? "on" : ""}`}
+              onClick={() => setTab("guardrails")}
+            >
+              Guardrails & policy
+            </button>
+            <button type="button" className={`tab ${tab === "spend" ? "on" : ""}`} onClick={() => setTab("spend")}>
+              Usage & spend
+            </button>
+            <button type="button" className={`tab ${tab === "danger" ? "on" : ""}`} onClick={() => setTab("danger")}>
+              Danger zone
+            </button>
+          </nav>
+        ) : null}
       </aside>
 
       <main className="admin-main">
-        {!ctx ? (
-          <div className="banner error">Sign in with your administrator master key to continue.</div>
+        {!signedIn ? (
+          <section className="admin-section admin-login">
+            <h2>Admin sign-in</h2>
+            <p className="muted">
+              Enter the administrator master key and click <strong>Sign in</strong> to unlock operational tools.
+            </p>
+            {authError ? (
+              <div className="banner error" role="alert">
+                {authError}
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
-        {tab === "keys" ? (
+        {signedIn && tab === "keys" ? (
           <section className="admin-section">
             <div className="section-head">
               <h2>API keys</h2>
@@ -404,6 +623,26 @@ export function AdminPage() {
                     <input className="input" value={genParallel} onChange={(e) => setGenParallel(e.target.value)} />
                   </label>
                 </div>
+                <div className="row2">
+                  <label className="field">
+                    <span className="label">Team ID (optional)</span>
+                    <input
+                      className="input mono"
+                      value={bindTeamId}
+                      onChange={(e) => setBindTeamId(e.target.value)}
+                      placeholder="Bind new key to team"
+                    />
+                  </label>
+                  <label className="field">
+                    <span className="label">User ID (optional)</span>
+                    <input
+                      className="input mono"
+                      value={bindUserId}
+                      onChange={(e) => setBindUserId(e.target.value)}
+                      placeholder="Bind new key to user"
+                    />
+                  </label>
+                </div>
                 <button type="button" className="btn primary" onClick={() => void onGenerate()}>
                   Generate key
                 </button>
@@ -500,7 +739,186 @@ export function AdminPage() {
           </section>
         ) : null}
 
-        {tab === "spend" ? (
+        {signedIn && tab === "teams" ? (
+          <section className="admin-section">
+            <div className="section-head">
+              <h2>Teams</h2>
+              <button
+                type="button"
+                className="btn primary"
+                disabled={teamsLoading}
+                onClick={() => void refreshTeams()}
+              >
+                {teamsLoading ? "Loading…" : "Refresh"}
+              </button>
+            </div>
+            {teamsError ? (
+              <div className="banner error" role="alert">
+                {teamsError}
+              </div>
+            ) : null}
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Alias</th>
+                    <th>ID</th>
+                    <th>Spend</th>
+                    <th>Max budget</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.length === 0 && !teamsLoading ? (
+                    <tr>
+                      <td colSpan={4} className="muted">
+                        No teams loaded. Create one below.
+                      </td>
+                    </tr>
+                  ) : (
+                    teams.map((row, i) => (
+                      <tr key={i}>
+                        <td>{pickRowStr(row, ["team_alias", "alias", "name"])}</td>
+                        <td className="mono cell-clip" title={pickRowStr(row, ["team_id", "id"])}>
+                          {pickRowStr(row, ["team_id", "id"]) || "—"}
+                        </td>
+                        <td>{numOrDash(row.spend)}</td>
+                        <td>{numOrDash(row.max_budget)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="panel">
+              <h3>Create team</h3>
+              <label className="field">
+                <span className="label">Team alias</span>
+                <input className="input" value={teamAlias} onChange={(e) => setTeamAlias(e.target.value)} />
+              </label>
+              <label className="field">
+                <span className="label">Max budget USD (optional)</span>
+                <input className="input" value={teamMaxBudget} onChange={(e) => setTeamMaxBudget(e.target.value)} />
+              </label>
+              <button type="button" className="btn primary" onClick={() => void onCreateTeam()}>
+                Create team
+              </button>
+              {teamMsg ? <pre className="code-block">{teamMsg}</pre> : null}
+            </div>
+          </section>
+        ) : null}
+
+        {signedIn && tab === "users" ? (
+          <section className="admin-section">
+            <div className="section-head">
+              <h2>Users</h2>
+              <button
+                type="button"
+                className="btn primary"
+                disabled={usersLoading}
+                onClick={() => void refreshUsers()}
+              >
+                {usersLoading ? "Loading…" : "Refresh"}
+              </button>
+            </div>
+            {usersError ? (
+              <div className="banner error" role="alert">
+                {usersError}
+              </div>
+            ) : null}
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>User ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 && !usersLoading ? (
+                    <tr>
+                      <td colSpan={3} className="muted">
+                        No users loaded. Invite one below or check proxy version endpoints.
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((row, i) => (
+                      <tr key={i}>
+                        <td>{pickRowStr(row, ["user_email", "email"])}</td>
+                        <td>{pickRowStr(row, ["user_role", "role"])}</td>
+                        <td className="mono cell-clip" title={pickRowStr(row, ["user_id", "id"])}>
+                          {pickRowStr(row, ["user_id", "id"]) || "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="panel">
+              <h3>Invite user</h3>
+              <p className="muted small">
+                Calls <code className="mono">POST /user/new</code>. Field names vary by LiteLLM version — adjust role if the
+                server rejects defaults.
+              </p>
+              <label className="field">
+                <span className="label">Email</span>
+                <input className="input mono" type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
+              </label>
+              <label className="field">
+                <span className="label">Role</span>
+                <input className="input mono" value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} />
+              </label>
+              <button type="button" className="btn primary" onClick={() => void onInviteUser()}>
+                Send invitation
+              </button>
+              {userMsg ? <pre className="code-block">{userMsg}</pre> : null}
+            </div>
+          </section>
+        ) : null}
+
+        {signedIn && tab === "guardrails" ? (
+          <section className="admin-section">
+            <h2>Guardrails & policy</h2>
+            <div className="panel">
+              <p className="muted">
+                Prompt-injection and routing guards run in{" "}
+                <code className="mono">custom_handlers.gateway_plugin</code> and{" "}
+                <code className="mono">hooks/guardrails.py</code> on the proxy. Proxy-level LiteLLM policies (when
+                available) are listed below; otherwise configure them in the{" "}
+                <a href={nativeDash} target="_blank" rel="noreferrer">
+                  native dashboard
+                </a>
+                .
+              </p>
+              {policyErr ? <div className="banner error">{policyErr}</div> : null}
+              {policyRows && policyRows.length > 0 ? (
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {policyRows.map((row, i) => (
+                        <tr key={i}>
+                          <td className="mono">{pickRowStr(row, ["policy_name", "name", "id"])}</td>
+                          <td className="muted small mono cell-clip" title={JSON.stringify(row)}>
+                            {JSON.stringify(row)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {signedIn && tab === "spend" ? (
           <section className="admin-section">
             <h2>Usage report</h2>
             <p className="muted">
@@ -528,7 +946,7 @@ export function AdminPage() {
           </section>
         ) : null}
 
-        {tab === "danger" ? (
+        {signedIn && tab === "danger" ? (
           <section className="admin-section">
             <h2>Danger zone</h2>
             <p className="muted">

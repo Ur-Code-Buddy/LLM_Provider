@@ -9,6 +9,15 @@ export function Layout() {
     document.title = pageTitleForPath(location.pathname);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const useConsoleTheme =
+      location.pathname.startsWith("/admin") || location.pathname.startsWith("/portal");
+    document.body.classList.toggle("theme-console", useConsoleTheme);
+    return () => {
+      document.body.classList.remove("theme-console");
+    };
+  }, [location.pathname]);
+
   return (
     <div className="shell">
       <header className="shell-header">
@@ -25,8 +34,11 @@ export function Layout() {
               <NavLink to="/" end className={({ isActive }) => `topnav-link ${isActive ? "active" : ""}`}>
                 Workspace
               </NavLink>
+              <NavLink to="/portal" className={({ isActive }) => `topnav-link ${isActive ? "active" : ""}`}>
+                Client portal
+              </NavLink>
               <NavLink to="/admin" className={({ isActive }) => `topnav-link ${isActive ? "active" : ""}`}>
-                Administration
+                Platform admin
               </NavLink>
             </div>
           </nav>

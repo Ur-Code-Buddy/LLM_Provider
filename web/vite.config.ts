@@ -17,6 +17,11 @@ export default defineConfig(({ mode }) => {
         "/global": { target, changeOrigin: true },
         "/customer": { target, changeOrigin: true },
         "/organization": { target, changeOrigin: true },
+        "/policy": { target, changeOrigin: true },
+        "/ui": { target, changeOrigin: true },
+        "/sso": { target, changeOrigin: true },
+        "/fallback": { target, changeOrigin: true },
+        "/openapi.json": { target, changeOrigin: true },
       },
     },
   };

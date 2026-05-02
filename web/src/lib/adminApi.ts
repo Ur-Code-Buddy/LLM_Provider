@@ -94,3 +94,64 @@ export async function globalSpendReport(
 export async function globalSpendReset(ctx: AdminContext): Promise<unknown> {
   return adminJson(ctx, "/global/spend/reset", { method: "POST", json: {} });
 }
+
+export type RecordRow = Record<string, unknown>;
+
+function extractRows(data: unknown, arrayKeys: string[]): RecordRow[] {
+  if (Array.isArray(data)) return data as RecordRow[];
+  if (data && typeof data === "object") {
+    const o = data as Record<string, unknown>;
+    for (const k of arrayKeys) {
+      const v = o[k];
+      if (Array.isArray(v)) return v as RecordRow[];
+    }
+  }
+  return [];
+}
+
+/** Team list endpoint shape differs by LiteLLM version — try GET then POST JSON. */
+export async function listTeams(ctx: AdminContext): Promise<RecordRow[]> {
+  let data: unknown;
+  try {
+    data = await adminJson(ctx, "/team/list", { method: "GET" });
+  } catch {
+    data = await adminJson(ctx, "/team/list", { method: "POST", json: {} });
+  }
+  return extractRows(data, ["teams", "data", "team_list", "results"]);
+}
+
+export async function createTeam(
+  ctx: AdminContext,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  return adminJson(ctx, "/team/new", { method: "POST", json: body });
+}
+
+export async function listUsers(ctx: AdminContext): Promise<RecordRow[]> {
+  let data: unknown;
+  try {
+    data = await adminJson(ctx, "/user/list", { method: "GET" });
+  } catch {
+    data = await adminJson(ctx, "/user/list", { method: "POST", json: {} });
+  }
+  return extractRows(data, ["users", "data", "user_list", "results"]);
+}
+
+export async function inviteUser(ctx: AdminContext, body: Record<string, unknown>): Promise<unknown> {
+  return adminJson(ctx, "/user/new", { method: "POST", json: body });
+}
+
+/** Policies / guardrails exposed by LiteLLM (often optional). */
+export async function tryListPolicies(ctx: AdminContext): Promise<RecordRow[] | null> {
+  try {
+    const data = await adminJson(ctx, "/policy/list", { method: "GET" });
+    return extractRows(data, ["policies", "data", "results"]);
+  } catch {
+    try {
+      const data = await adminJson(ctx, "/policy/list", { method: "POST", json: {} });
+      return extractRows(data, ["policies", "data", "results"]);
+    } catch {
+      return null;
+    }
+  }
+}
