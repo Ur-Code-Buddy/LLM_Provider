@@ -8,9 +8,9 @@ import {
 } from "../lib/storage";
 
 function tierLabel(t: TierMode): string {
-  if (t === "auto") return "Auto (classifier)";
-  if (t === "basic") return "Basic";
-  return "Premium";
+  if (t === "auto") return "Automatic";
+  if (t === "basic") return "Standard";
+  return "Priority";
 }
 
 export function ChatPage() {
@@ -95,7 +95,7 @@ export function ChatPage() {
           <span className="label">API base URL</span>
           <input
             className="input"
-            placeholder="Leave empty in dev → Vite proxy /v1"
+            placeholder="Optional — leave blank to use the dev proxy (/v1)"
             value={settings.apiBase}
             onChange={(e) => setSettings((s) => ({ ...s, apiBase: e.target.value }))}
             autoComplete="off"
@@ -123,14 +123,14 @@ export function ChatPage() {
               setSettings((s) => ({ ...s, tier: e.target.value as TierMode }))
             }
           >
-            <option value="auto">Auto (classifier + cache)</option>
-            <option value="basic">Basic (DeepSeek)</option>
-            <option value="premium">Premium (Claude → GPT‑4o)</option>
+            <option value="auto">Automatic — routed with cache</option>
+            <option value="basic">Standard tier</option>
+            <option value="premium">Priority tier</option>
           </select>
         </label>
 
         <label className="field">
-          <span className="label">Model field (ignored by gateway)</span>
+          <span className="label">Model identifier (optional)</span>
           <input
             className="input mono"
             value={settings.model}
@@ -153,16 +153,19 @@ export function ChatPage() {
           </button>
         </div>
 
-        <p className="hint">Under construction.</p>
+        <p className="hint">
+          Connection and keys are stored only in this browser. Use a production API base URL when not running the local
+          development proxy.
+        </p>
       </aside>
 
       <main className="main">
         <header className="main-header">
           <div>
-            <h1>Chat</h1>
+            <h1>Workspace</h1>
             <p className="meta">
-              Tier: <strong>{tierLabel(settings.tier)}</strong>
-              {settings.stream ? " · streaming" : " · non-streaming"}
+              Routing: <strong>{tierLabel(settings.tier)}</strong>
+              {settings.stream ? " · streaming responses" : " · buffered responses"}
             </p>
           </div>
         </header>
@@ -176,8 +179,8 @@ export function ChatPage() {
         <div className="thread">
           {messages.length === 0 ? (
             <div className="empty">
-              <h2>Start a conversation</h2>
-              <p>Enter your virtual key, choose tier, then type a message.</p>
+              <h2>No messages yet</h2>
+              <p>Configure your API base URL if required, enter your access key, select a routing tier, then send a message.</p>
             </div>
           ) : (
             messages.map((m, i) => (
@@ -206,7 +209,7 @@ export function ChatPage() {
             disabled={busy}
           />
           <div className="composer-row">
-            <span className="composer-hint">Enter to send · Shift+Enter newline</span>
+            <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>
             <button type="button" className="btn primary" disabled={!canSend} onClick={() => void send()}>
               {busy ? "Sending…" : "Send"}
             </button>

@@ -71,7 +71,7 @@ export function AdminPage() {
   const [keysLoading, setKeysLoading] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);
 
-  const [genAlias, setGenAlias] = useState("gateway-client");
+  const [genAlias, setGenAlias] = useState("api-client");
   const [genModels, setGenModels] = useState(DEFAULT_MODELS.join(", "));
   const [genMaxBudget, setGenMaxBudget] = useState("50");
   const [genBudgetDuration, setGenBudgetDuration] = useState("30d");
@@ -119,7 +119,7 @@ export function AdminPage() {
 
   const refreshKeys = useCallback(async () => {
     if (!ctx) {
-      setKeysError("Enter master key.");
+      setKeysError("Enter the administrator master key.");
       return;
     }
     setKeysError(null);
@@ -148,7 +148,7 @@ export function AdminPage() {
       .map((s) => s.trim())
       .filter(Boolean);
     const body: Record<string, unknown> = {
-      metadata: { key_alias: genAlias.trim() || "gateway-client" },
+      metadata: { key_alias: genAlias.trim() || "api-client" },
       models: models.length ? models : DEFAULT_MODELS,
       max_budget: Number(genMaxBudget) || 0,
       budget_duration: genBudgetDuration.trim() || undefined,
@@ -247,8 +247,11 @@ export function AdminPage() {
   return (
     <div className="admin-root">
       <aside className="admin-side">
-        <h1 className="admin-title">Admin</h1>
-        <p className="admin-lead">Under construction.</p>
+        <h1 className="admin-title">Administration</h1>
+        <p className="admin-lead">
+          Operator console for keys, usage, and limits. The master key is stored only in this browser — use a trusted
+          device.
+        </p>
 
         <label className="field">
           <span className="label">API base URL</span>
@@ -256,7 +259,7 @@ export function AdminPage() {
             className="input mono"
             value={apiBase}
             onChange={(e) => setApiBase(e.target.value)}
-            placeholder="Empty = dev proxy"
+            placeholder="Blank uses the development proxy"
           />
         </label>
 
@@ -272,7 +275,7 @@ export function AdminPage() {
           />
         </label>
 
-        <nav className="admin-tabs vertical" aria-label="Admin sections">
+        <nav className="admin-tabs vertical" aria-label="Administration sections">
           <button type="button" className={`tab ${tab === "keys" ? "on" : ""}`} onClick={() => setTab("keys")}>
             Keys & limits
           </button>
@@ -287,13 +290,13 @@ export function AdminPage() {
 
       <main className="admin-main">
         {!ctx ? (
-          <div className="banner error">Enter your master key to use the admin panel.</div>
+          <div className="banner error">Sign in with your administrator master key to continue.</div>
         ) : null}
 
         {tab === "keys" ? (
           <section className="admin-section">
             <div className="section-head">
-              <h2>Virtual keys</h2>
+              <h2>API keys</h2>
               <button type="button" className="btn primary" disabled={keysLoading} onClick={() => void refreshKeys()}>
                 {keysLoading ? "Loading…" : "Refresh list"}
               </button>
@@ -489,7 +492,7 @@ export function AdminPage() {
                   />
                 </label>
                 <button type="button" className="btn primary" onClick={() => void onInfo()}>
-                  Fetch /key/info
+                  Load key details
                 </button>
                 {infoJson ? <pre className="code-block">{infoJson}</pre> : null}
               </div>
@@ -499,10 +502,9 @@ export function AdminPage() {
 
         {tab === "spend" ? (
           <section className="admin-section">
-            <h2>Spend report</h2>
+            <h2>Usage report</h2>
             <p className="muted">
-              Calls <code className="mono">GET /global/spend/report</code> (master key). Shape depends on backend
-              version.
+              Aggregated spend for the selected period. The response shape depends on your API server version.
             </p>
             <div className="row2">
               <label className="field">

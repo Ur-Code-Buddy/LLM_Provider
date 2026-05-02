@@ -39,19 +39,7 @@ body {
   flex-direction: column;
 }
 
-.construction-banner {
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 0.4rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.topnav {
+.shell-header {
   border-bottom: 1px solid var(--border);
   background: rgba(18, 23, 34, 0.92);
   backdrop-filter: blur(10px);
@@ -60,11 +48,68 @@ body {
   z-index: 20;
 }
 
+.shell-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.brand-lockup:hover .brand-name {
+  color: var(--text);
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), #2563eb);
+  box-shadow: 0 4px 18px rgba(61, 214, 195, 0.22);
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.brand-tagline {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.08rem;
+  line-height: 1.25;
+}
+
+.topnav {
+  border-bottom: none;
+  background: transparent;
+}
+
 .topnav-inner {
   display: flex;
   gap: 0.25rem;
-  padding: 0.45rem 1rem;
-  max-width: 1200px;
+  padding: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .topnav-link {

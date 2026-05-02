@@ -1,6 +1,6 @@
 # LiteLLM gateway (self-hosted)
 
-Dockerized **LiteLLM proxy** with Postgres (virtual keys + spend), Redis (router limits + tier classifier cache), optional **Cloudflare Tunnel**, and optional **web UI** (chat + admin).
+Dockerized **LiteLLM proxy** with Postgres (virtual keys + spend), Redis (router limits + tier classifier cache), optional **Cloudflare Tunnel**, and optional **Inference Console** web client in `web/` (Workspace + Administration).
 
 **Routing:** clients use a single OpenAI-compatible API. The gateway applies guardrails, optional **basic / premium** tier routing (DeepSeek vs Claude with GPT‑4o fallback), and overwrites the requested model. See [`config/proxy_config.yaml`](config/proxy_config.yaml) and [`hooks/`](hooks/).
 
@@ -125,9 +125,9 @@ The **`model`** field is rewritten by the gateway hooks; you can still send a pl
 
 ## 5. Web UI (optional)
 
-The **`web/`** app provides **Chat** and **Admin** (master key). See **[`web/README.md`](web/README.md)** for details.
+The **`web/`** app (**Inference Console**) provides **Workspace** (completions) and **Administration** (master key). See **[`web/README.md`](web/README.md)** for details.
 
-**Local development** (Vite proxies to LiteLLM and avoids most CORS issues):
+**Local development** (Vite proxies to the API and avoids most CORS issues):
 
 ```bash
 cd web
@@ -144,7 +144,7 @@ cd web && npm install && npm run build && cd ..
 docker compose --profile ui up -d gateway-ui
 ```
 
-UI is served on **`http://localhost:8080`** by default (`GATEWAY_UI_PORT`). Set **API base URL** in the sidebar to your LiteLLM URL if the browser cannot use the dev proxy — you may need **CORS** enabled on LiteLLM or a **single reverse proxy** for UI + API.
+UI is served on **`http://localhost:8080`** by default (`GATEWAY_UI_PORT`). Set **API base URL** in the sidebar to your public API origin if the browser cannot use the dev proxy — you may need **CORS** on the API or a **single reverse proxy** for the UI and API together.
 
 ---
 
@@ -153,7 +153,7 @@ UI is served on **`http://localhost:8080`** by default (`GATEWAY_UI_PORT`). Set 
 | Profile | Command | Purpose |
 |---------|---------|---------|
 | **tunnel** | `docker compose --profile tunnel up -d cloudflared` | Cloudflare Tunnel (`CF_TUNNEL_TOKEN` → `TUNNEL_TOKEN`). Best on **Linux/Pi** with host networking. |
-| **ui** | `docker compose --profile ui up -d gateway-ui` | Nginx serving **`web/dist`** — build the UI first. |
+| **ui** | `docker compose --profile ui up -d gateway-ui` | Nginx serving **`web/dist`** (Inference Console) — build the UI first. |
 
 Example full stack with tunnel + UI (Linux):
 
