@@ -47,6 +47,8 @@ services:
       - ./config/proxy_config.yaml:/app/config.yaml:ro
       - ./hooks:/app/custom_handlers:ro
     environment:
+      # Required for nginx/gateway-ui and other containers to reach the proxy via Docker DNS.
+      HOST: "0.0.0.0"
       PYTHONPATH: /app
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
@@ -69,7 +71,17 @@ services:
       GATEWAY_FALLBACK_MODEL: ${GATEWAY_FALLBACK_MODEL:-openai/gpt-4o}
       GATEWAY_KIMI_MODEL: ${GATEWAY_KIMI_MODEL:-openai/moonshot-v1-8k}
       GATEWAY_KIMI_API_BASE: ${GATEWAY_KIMI_API_BASE:-https://api.moonshot.cn/v1}
-    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    command:
+      [
+        "--host",
+        "0.0.0.0",
+        "--config",
+        "/app/config.yaml",
+        "--port",
+        "4000",
+        "--num_workers",
+        "1",
+      ]
 
   cloudflared:
     profiles: ["tunnel"]
