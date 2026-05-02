@@ -2,7 +2,7 @@
 
 Dockerized **LiteLLM proxy** with Postgres (virtual keys + spend), Redis (router limits + tier classifier cache), optional **Cloudflare Tunnel**, and optional **web UI** (chat + admin).
 
-**Routing:** clients use a single OpenAI-compatible API. The gateway applies guardrails, optional **basic / premium** tier routing (DeepSeek vs Claude with GPT‑4o fallback), and overwrites the requested model. See [`config/litellm_config.yaml`](config/litellm_config.yaml) and [`hooks/`](hooks/).
+**Routing:** clients use a single OpenAI-compatible API. The gateway applies guardrails, optional **basic / premium** tier routing (DeepSeek vs Claude with GPT‑4o fallback), and overwrites the requested model. See [`config/proxy_config.yaml`](config/proxy_config.yaml) and [`hooks/`](hooks/).
 
 ---
 
@@ -190,7 +190,7 @@ Integration tests are skipped unless **`LITELLM_BASE_URL`** and **`LITELLM_TEST_
 | Path | Role |
 |------|------|
 | `docker-compose.yml` | Postgres, Redis, LiteLLM, optional cloudflared + static UI |
-| `config/litellm_config.yaml` | LiteLLM models, Redis router, fallbacks, callbacks |
+| `config/proxy_config.yaml` | LiteLLM models, Redis router, fallbacks, callbacks |
 | `hooks/` | Guardrails, tier routing, classifier cache, JSON logging |
 | `web/` | React UI (chat + admin) |
 | `scripts/` | Example `/key/generate` helpers |
@@ -204,4 +204,4 @@ Integration tests are skipped unless **`LITELLM_BASE_URL`** and **`LITELLM_TEST_
 - **CORS in browser:** Use Vite dev proxy, or configure LiteLLM CORS, or one reverse proxy for UI + API.
 - **Admin UI “master key”:** Stored in **browser localStorage** — use only on trusted machines.
 
-For LiteLLM-specific behavior (endpoints, config keys), see the official docs: [LiteLLM Proxy](https://docs.litellm.ai/docs/proxy/docker_quick_start).
+For product documentation: under construction.

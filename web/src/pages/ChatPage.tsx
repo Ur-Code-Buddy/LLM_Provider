@@ -91,14 +91,6 @@ export function ChatPage() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden />
-          <div>
-            <div className="brand-title">LLM Gateway</div>
-            <div className="brand-sub">OpenAI-compatible</div>
-          </div>
-        </div>
-
         <label className="field">
           <span className="label">API base URL</span>
           <input
@@ -161,12 +153,7 @@ export function ChatPage() {
           </button>
         </div>
 
-        <p className="hint">
-          Dev: run <code className="mono">npm run dev</code> with LiteLLM on{" "}
-          <code className="mono">127.0.0.1:4000</code> or set{" "}
-          <code className="mono">VITE_DEV_PROXY_TARGET</code>. Production: build with{" "}
-          <code className="mono">VITE_API_BASE</code> or set full API base above.
-        </p>
+        <p className="hint">Under construction.</p>
       </aside>
 
       <main className="main">

@@ -42,10 +42,11 @@ services:
     ports:
       - "${LITELLM_HOST_PORT:-4000}:4000"
     volumes:
-      - ./config/litellm_config.yaml:/app/config.yaml:ro
+      - ./config/proxy_config.yaml:/app/config.yaml:ro
       - ./hooks:/app/custom_handlers:ro
     environment:
       PYTHONPATH: /app
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:-}
       DATABASE_URL: ${DATABASE_URL}

@@ -10,8 +10,8 @@
   --accent-dim: #2a9d8f;
   --danger: #f07178;
   --radius: 12px;
-  --font: "DM Sans", system-ui, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }
 
 *,
@@ -37,6 +37,18 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.construction-banner {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .topnav {
@@ -89,32 +101,6 @@ body {
   flex-direction: column;
   gap: 0.9rem;
   overflow-y: auto;
-}
-
-.brand {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-bottom: 0.35rem;
-}
-
-.brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent), #2563eb);
-  box-shadow: 0 6px 24px rgba(61, 214, 195, 0.25);
-}
-
-.brand-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
-}
-
-.brand-sub {
-  font-size: 0.78rem;
-  color: var(--muted);
 }
 
 .field {

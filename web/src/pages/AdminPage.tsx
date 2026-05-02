@@ -248,10 +248,7 @@ export function AdminPage() {
     <div className="admin-root">
       <aside className="admin-side">
         <h1 className="admin-title">Admin</h1>
-        <p className="admin-lead">
-          Uses your LiteLLM <strong>master key</strong>. Stored only in this browser (localStorage). Do not use on
-          shared machines.
-        </p>
+        <p className="admin-lead">Under construction.</p>
 
         <label className="field">
           <span className="label">API base URL</span>
@@ -271,7 +268,7 @@ export function AdminPage() {
             autoComplete="off"
             value={admin.masterKey}
             onChange={(e) => setAdmin((a) => ({ ...a, masterKey: e.target.value }))}
-            placeholder="sk-… (LITELLM_MASTER_KEY)"
+            placeholder="sk-… (master key)"
           />
         </label>
 
@@ -504,8 +501,8 @@ export function AdminPage() {
           <section className="admin-section">
             <h2>Spend report</h2>
             <p className="muted">
-              Calls LiteLLM <code className="mono">GET /global/spend/report</code> (master key). Shape depends on
-              proxy version.
+              Calls <code className="mono">GET /global/spend/report</code> (master key). Shape depends on backend
+              version.
             </p>
             <div className="row2">
               <label className="field">

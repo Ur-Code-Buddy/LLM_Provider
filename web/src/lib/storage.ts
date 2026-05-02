@@ -8,7 +8,7 @@ export type GatewaySettings = {
   model: string;
 };
 
-const KEY = "litellm_gateway_ui_v1";
+const KEY = "gateway_ui_v1";
 
 const defaultSettings = (): GatewaySettings => ({
   apiBase: import.meta.env.VITE_API_BASE ?? "",
@@ -39,7 +39,7 @@ export function patchSettings(partial: Partial<GatewaySettings>): GatewaySetting
   return next;
 }
 
-const ADMIN_KEY = "litellm_gateway_admin_v1";
+const ADMIN_KEY = "gateway_admin_v1";
 
 export type AdminCredentials = {
   masterKey: string;

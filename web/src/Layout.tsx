@@ -3,6 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 export function Layout() {
   return (
     <div className="shell">
+      <div className="construction-banner" role="status">
+        Under construction
+      </div>
       <nav className="topnav" aria-label="Primary">
         <div className="topnav-inner">
           <NavLink to="/" end className={({ isActive }) => `topnav-link ${isActive ? "active" : ""}`}>
