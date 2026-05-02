@@ -31,8 +31,10 @@ services:
       timeout: 5s
       retries: 10
 
+  # Versioned stable image includes fixes for periodic budget-reset job (avoid Prisma Json? `not: None` crashes on rolling main-stable).
+  # Override with `LITELLM_IMAGE` in `.env`; see LiteLLM PR #26085 / #26346.
   litellm:
-    image: docker.litellm.ai/berriai/litellm-database:main-stable
+    image: ${LITELLM_IMAGE:-litellm/litellm-database:v1.83.14-stable}
     restart: unless-stopped
     depends_on:
       postgres:

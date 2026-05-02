@@ -37,6 +37,7 @@ Optional / tuning (defaults exist in `docker-compose.yml`):
 - `GATEWAY_REDIS_URL` — classifier cache (default `redis://redis:6379/0` inside Compose).
 - `LITELLM_SALT_KEY` — optional LiteLLM salt for key hashing.
 - `CF_TUNNEL_TOKEN` — only if you use the **tunnel** profile (see below).
+- `LITELLM_IMAGE` — proxy image (default **`litellm/litellm-database:v1.83.14-stable`** in `docker-compose.yml`). Pin or change if you need another registry or release.
 
 Example skeleton (adjust passwords and keys):
 
@@ -219,5 +220,6 @@ Integration tests are skipped unless **`LITELLM_BASE_URL`** and **`LITELLM_TEST_
 - **CORS in browser:** Use Vite dev proxy, or configure LiteLLM CORS, or one reverse proxy for UI + API.
 - **Admin UI “master key”:** Stored in **browser localStorage** — use only on trusted machines.
 - **SSO `redirect_uri` mismatch:** Confirm **`PROXY_BASE_URL`** equals the scheme+host users use, and IdP callbacks include **`/sso/callback`** on that exact host.
+- **Logs: `Failed to reset budget windows` / `where.budget_limits.not` / `MissingRequiredValueError`:** The background budget job used an invalid Prisma filter on JSON columns; fixed in newer LiteLLM builds ([PR #26085](https://github.com/BerriAI/litellm/pull/26085), follow-up [#26346](https://github.com/BerriAI/litellm/pull/26346)). Use the default **versioned** image from `docker-compose.yml`, or run `docker compose pull litellm` after updating the pinned tag.
 
 For product documentation: under construction.
